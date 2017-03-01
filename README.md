@@ -37,3 +37,15 @@ In case where the method shown above doesn't work, just install the relevant pac
 👍
 
 ### File structure
+- All python3 scripts are in the main folder.
+  - `clean_split.py` - Does the following operations:
+    - opens `manhattan-dof.csv`
+    - removes outliers from the data
+    - splits the data into training and validation datasets
+    - outputs `training.csv` and `validation.csv` to the `clean_datasets` folder.
+- [folder] ``plots`` - includes all plot images.
+  - [folder] ``data_cleaning`` - plots images that shows the cleaned data (before vs. after)
+
+### Progress
+The data was cleaned from outliers. The cleaned data (in green) can be seen below:
+![data set: before vs. after](plots/data_cleaning/all_relevant.png)
