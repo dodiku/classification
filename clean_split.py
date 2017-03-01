@@ -6,15 +6,11 @@ Written by: Viola Zhong & Dror Ayalon
 '''
 
 import numpy as np
-from sklearn import linear_model
-from sklearn.decomposition import PCA
+from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import csv
 
-
-# GrossSqFt, GrossIncomeSqFt, MarketValueperSqFt
-# Classify “Neighborhood”
 
 '''
 LOADING THE DATASET THAT INCLUDES THE FOLLOWING COLUMNS:
@@ -125,7 +121,9 @@ for i in outlier[0]:
 
 titles = ['Neighborhood', 'BldClassif', 'YearBuilt', 'GrossSqFt', 'GrossIncomeSqFt', 'MarketValueperSqFt']
 
+###############################
 # generating a plot per column
+###############################
 
 for i in range(0,6):
     if (i == 0):
@@ -157,7 +155,9 @@ for i in range(0,6):
         path = "plots/data_cleaning/" + str(i) + ".png"
         plt.savefig(path)
 
+###############################
 # generating a single plot with all relevant graphs
+###############################
 
 plt.figure(10)
 plt.subplot(2,2,1)
@@ -195,9 +195,80 @@ path = "plots/data_cleaning/10.png"
 plt.savefig(path)
 
 '''
-SAVING A NEW CSV FILE WITH THE FILETERED DATA
+SPLITTING THE DATA:
+    - TRAINING VS. VALIDATION
+    - RELEVANT COLUMNS: [0] Neighborhood, [3] = GrossSqFt, [4] GrossIncomeSqFt, [5] MarketValueperSqFt
 '''
+
+# removing unneeded columns
+filtered_data = np.delete(filtered_data, (1,2), 1)
+print ("filtered_data after removing columns",filtered_data.shape,":")
+print (filtered_data)
+
+# reordeing the columns: putting Neighborhood at the end
+filtered_data = np.hstack((filtered_data, filtered_data[:,0].reshape(-1,1)))
+filtered_data = np.delete(filtered_data, (0), 1)
+print ("filtered_data after reordering",filtered_data.shape,":")
+print (filtered_data)
+
+###############################
+# saving the filtered data as a single csv file
+###############################
 np.savetxt("clean_datasets/filtered_data.csv", filtered_data, delimiter=';')
+
+###############################
+# generating training and test data sets
+###############################
+
+rows,columns = filtered_data.shape
+
+# generating training batch
+test_rows = round(rows*0.2)
+training_rows = rows - test_rows
+
+x_training = np.empty([0,columns-1], dtype=float)
+y_training = np.empty([0,1], dtype=float)
+for i in range (0, training_rows):
+    x_value = filtered_data[i,0:3]
+    y_value = filtered_data[i,3]
+
+    x_training = np.vstack((x_training,x_value))
+    y_training = np.vstack((y_training,y_value))
+
+
+# generating validation batch
+x_test = np.empty([0,columns-1], dtype=float)
+y_test = np.empty([0,1], dtype=float)
+for i in range (training_rows, rows):
+    x_value = filtered_data[i,0:3]
+    y_value = filtered_data[i,3]
+
+    x_test = np.vstack((x_test,x_value))
+    y_test = np.vstack((y_test,y_value))
+
+
+print ('x_test:')
+# print (x_validation)
+print (x_test.shape)
+print ('y_test:')
+# print (y_validation)
+print (y_test.shape)
+
+print ('x_training:')
+# print (x_training)
+print (x_training.shape)
+print ('y_training:')
+# print (y_training)
+print (y_training.shape)
+
+
+'''
+SAVING TRAINING AND TEST CSV FILES
+'''
+np.savetxt("clean_datasets/x_training.csv", x_training, delimiter=';') # saving x_training as csv
+np.savetxt("clean_datasets/x_test.csv", x_test, delimiter=';') # saving x_test as csv
+np.savetxt("clean_datasets/y_training.csv", y_training, delimiter=';') # saving x_training as csv
+np.savetxt("clean_datasets/y_test.csv", y_test, delimiter=';') # saving x_test as csv
 print ('#####', removed_rows, 'were removed from the data set')
 print ('##### filtered_data size after cleaning: ', filtered_data.shape)
 plt.show()
