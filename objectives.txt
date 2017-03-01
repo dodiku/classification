@@ -1,0 +1,30 @@
+objectives:
+-----------
+
+> include analysis using 3 methods:
+	1. Naive-Bayes
+	2. SVM without kernels
+	3. SVM with kernels
+
+> show comparison using plots and numbers
+
+
+GrossSqFt, GrossIncomeSqFt, MarketValueperSqFt
+Classify “Neighborhood”
+
+order of operation:
+-------------------
+
+(1) removing outliers (Neighborhood: 0-30)
+
+(2) normalization [scipy.cluster.vp.whiten]
+
+(3) cross-validation (train_test_split)
+
+(4) Naive-Bayes
+
+(5) SVM without kernels
+
+(6) SVM with kernels
+
+(7) write the report
