@@ -1,4 +1,4 @@
 # classification
 
-this is a very shitty plot. please ignore it. really!  
+hey! this not shitty at all. 
 ![asdf](4.png)
