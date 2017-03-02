@@ -1,274 +1,190 @@
-'''
+'''------------------------------------
 Machine Learning for Cities // New York University
 Instructor: Professor Luis Gustavo Nonato
 
 Written by: Viola Zhong & Dror Ayalon
-'''
+------------------------------------'''
 
 import numpy as np
+import pandas as pd
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+from scipy.cluster.vq import whiten
 import csv
 
 
-'''
+'''------------------------------------
 LOADING THE DATASET THAT INCLUDES THE FOLLOWING COLUMNS:
-[0] = Neighborhood [classes]
-[1] = BldClassif
-[2] = YearBuilt
-[3] = GrossSqFt [independent]
-[4] = GrossIncomeSqFt [independent]
-[5] = MarketValueperSqFt [independent]
-'''
+    [0] = Neighborhood [classes]
+    [1] = BldClassif
+    [2] = YearBuilt
+    [3] = GrossSqFt [independent]
+    [4] = GrossIncomeSqFt [independent]
+    [5] = MarketValueperSqFt [independent]
+------------------------------------'''
 
 dataset = open('manhattan-dof.csv', "r")
 dataset = csv.reader(dataset,delimiter=';')
 next(dataset) # moving passed the title row
 
-'''
-CREATING A FLOAT-BASED NUMPY ARRAY
-'''
-np_array = np.array([r for r in dataset])
-np_array = np_array.astype(np.float) # this numpy array holds all the raw data
+df = pd.read_csv('manhattan-dof.csv', delimiter=';', index_col=False)
 
-filtered_data = np.copy(np_array) # this numpy array will hold the data after filterring
-print ('##### filtered_data size before cleaning: ', filtered_data.shape)
+x_all = df.ix[:,3:]
+y_all = df.ix[:,0]
 
-'''
-FILTERING THE DATA (to get rid of outliers + irrelevant data)
-'''
 
+'''------------------------------------
+CLEANING AND FILTERING THE DATA
+(to get rid of outliers and unneeded data)
+------------------------------------'''
 removed_rows = 0
 
-# -----------------------------
-# cleaning [0] = Neighborhood
-# -----------------------------
-# removing all relevant rows for neighborhoods bigger than 30
-
-outlier = np.where(filtered_data[:,0] > 30)
+# removing the number of neighborhoods
+outlier = np.where(y_all[0:] > 30)
 print ("[0] = Neighborhood outlier:")
 print (outlier)
 
-for i in outlier[0]:
-    outlier_filtered = np.where(filtered_data[:,0] > 30)
-    # print ("[0] = Neighborhood: outliers left:")
-    # print (outlier_filtered)
-    # print ('---> [0] = Neighborhood: deleting the following row: ', filtered_data[outlier_filtered[0][0]])
-    filtered_data = np.delete(filtered_data, (outlier_filtered[0][0]), axis=0)
-    removed_rows = removed_rows + 1
+if (len(outlier) > 0):
+    y_all = y_all.drop(y_all.index[outlier])
+    x_all = x_all.drop(x_all.index[outlier])
+    removed_rows = removed_rows + len(outlier[0])
 
 # -----------------------------
 # cleaning [3] = GrossSqFt
 # -----------------------------
-# removing all relevant rows for GrossSqFt bigger than 1,500,000
 
-outlier = np.where((filtered_data[:,3] > 1500000))
+# removing all relevant rows for GrossSqFt bigger than 1,500,000
+outlier = np.where(x_all['GrossSqFt'] > 1500000)
 print ("[3] = GrossSqFt:")
 print (outlier)
-
-# print ('##### filtered_data size before cleaning: ', filtered_data.shape)
-for i in outlier[0]:
-    outlier_filtered = np.where((filtered_data[:,3] > 1500000))
-    # print ("[3] = GrossSqFt: outliers left:")
-    # print (outlier_filtered)
-    # print ('---> [3] = GrossSqFt: deleting the following row: ', filtered_data[outlier_filtered[0][0]])
-    filtered_data = np.delete(filtered_data, (outlier_filtered[0][0]), axis=0)
-    removed_rows = removed_rows + 1
-
+if (len(outlier) > 0):
+    y_all = y_all.drop(y_all.index[outlier])
+    x_all = x_all.drop(x_all.index[outlier])
+    removed_rows = removed_rows + len(outlier[0])
 
 # -----------------------------
 # cleaning [4] = GrossIncomeSqFt
 # -----------------------------
-# removing all relevant rows for GrossIncomeSqFt bigger than 50, or smaller than 10
 
-outlier = np.where(((filtered_data[:,4] < 10) | (filtered_data[:,4] > 50)))
+# removing all relevant rows for GrossIncomeSqFt bigger than 50, or smaller than 10
+outlier = np.where(((x_all['GrossIncomeSqFt'] < 10) | (x_all['GrossIncomeSqFt'] > 50)))
 # outlier = np.where(filtered_data[:,4] < 10)
 print ("[4] = GrossIncomeSqFt:")
 print (outlier)
-
-# print ('filtered_data size before cleaning: ', filtered_data.shape)
-for i in outlier[0]:
-    outlier_filtered = np.where(((filtered_data[:,4] < 10) | (filtered_data[:,4] > 50)))
-    # print ("[4] = GrossIncomeSqFt: outliers left:")
-    # print (outlier_filtered)
-    # print ('---> [4] = GrossIncomeSqFt: deleting the following row: ', filtered_data[outlier_filtered[0][0]])
-    filtered_data = np.delete(filtered_data, (outlier_filtered[0][0]), axis=0)
-    removed_rows = removed_rows + 1
+if (len(outlier) > 0):
+    y_all = y_all.drop(y_all.index[outlier])
+    x_all = x_all.drop(x_all.index[outlier])
+    removed_rows = removed_rows + len(outlier[0])
 
 
 # -----------------------------
 # cleaning [5] = MarketValueperSqFt
 # -----------------------------
+
 # removing all relevant rows for MarketValueperSqFt bigger than 50, or smaller than 10
 
-# outlier = np.where((filtered_data[:,5] < 40))
+# outlier = np.where((x_all['MarketValueperSqFt' < 40))
 # print ("[5] = MarketValueperSqFt:")
 # print (outlier)
-#
-# for i in outlier[0]:
-#     outlier_filtered = np.where((filtered_data[:,5] < 40))
-#     print ("[5] = MarketValueperSqFt: outliers left:")
-#     print (outlier_filtered)
-#     print ('---> [5] = MarketValueperSqFt: deleting the following row: ', filtered_data[outlier_filtered[0][0]])
-#     filtered_data = np.delete(filtered_data, (outlier_filtered[0][0]), axis=0)
-#     removed_rows = removed_rows + 1
+# if (len(outlier) > 0):
+    # y_all = y_all.drop(y_all.index[outlier])
+    # x_all = x_all.drop(x_all.index[outlier])
+    # removed_rows = removed_rows + len(outlier[0])
 
 
-# -----------------------------
-# plotting the data after clearning: before vs. after
-# -----------------------------
+'''------------------------------------
+PLOTTING THE DATA: BEFORE AND AFTER DATA CLEANING
+------------------------------------'''
 
 titles = ['Neighborhood', 'BldClassif', 'YearBuilt', 'GrossSqFt', 'GrossIncomeSqFt', 'MarketValueperSqFt']
+df_y = df['Neighborhood'].value_counts()
+df_x = df['Neighborhood'].value_counts().index.tolist()
+n_y = y_all.value_counts()
+n_x = y_all.value_counts().index.tolist()
 
-###############################
-# generating a plot per column
-###############################
+df_rows, df_columns = df.shape
+rows, columns = x_all.shape
+df = df.as_matrix()
+x_all = x_all.as_matrix()
+y_all = y_all.as_matrix()
 
-for i in range(0,6):
-    if (i == 0):
-        # print (i, 'Neighborhood')
-        plt.figure(i)
-        plt.plot(np_array[:,2],np_array[:,i], 'o', c="orange", markersize=3)
-        plt.plot(filtered_data[:,2],filtered_data[:,i], 'o', c="palegreen", markersize=3)
-        plt.title(titles[i], fontsize= 10)
-        plt.xlabel('YearBuilt', fontsize=8)
-        plt.xticks(fontsize=8)
-        plt.yticks(fontsize=8)
-        path = "plots/data_cleaning/" + str(i) + ".png"
-        plt.savefig(path)
-    else:
-        plt.figure(i)
-        plt.plot(np_array[:,0],np_array[:,i], 'o', c="orange", markersize=3)
-        plt.plot(filtered_data[:,0],filtered_data[:,i], 'o', c="palegreen", markersize=3)
-        # if (i == 2):
-        #     plt.title("Built Year: Original Data (orange) VS. Cleaned Data (green)", fontsize= 10)
-        # elif (i == 4):
-        #     plt.title("Original Price(SqFt): Original Data (orange) VS. Cleaned Data (green)", fontsize= 10)
-        # else:
-        #     print (i)
-        #     plt.title(titles[i], fontsize= 10)
-        plt.title(titles[i], fontsize= 10)
-        plt.xlabel('Neighborhood', fontsize=8)
-        plt.xticks(fontsize=8)
-        plt.yticks(fontsize=8)
-        path = "plots/data_cleaning/" + str(i) + ".png"
-        plt.savefig(path)
+plt.figure(1)
 
-###############################
-# generating a single plot with all relevant graphs
-###############################
-
-plt.figure(10)
 plt.subplot(2,2,1)
-plt.plot(np_array[:,2],np_array[:,0], 'o', c="orange", markersize=3)
-plt.plot(filtered_data[:,2],filtered_data[:,0], 'o', c="palegreen", markersize=3)
-plt.xlabel('YearBuilt', fontsize=8)
+plt.bar(df_x, df_y, color='orange')
+plt.bar(n_x, n_y, color='palegreen')
+plt.ylabel('Number of Samples', fontsize=8)
 plt.title(titles[0], fontsize= 10)
-plt.xticks(fontsize=8)
-plt.yticks(fontsize=8)
 
 plt.subplot(2,2,2)
-plt.plot(np_array[:,0],np_array[:,3], 'o', c="orange", markersize=3)
-plt.plot(filtered_data[:,0],filtered_data[:,3], 'o', c="palegreen", markersize=3)
+plt.plot(df[:,0],df[:,3], 'o', c="orange", markersize=3)
+plt.plot(y_all,x_all[:,0], 'o', c="palegreen", markersize=3)
 plt.title(titles[3], fontsize= 10)
 plt.xlabel('Neighborhood', fontsize=8)
 plt.xticks(fontsize=8)
 plt.yticks(fontsize=8)
 
 plt.subplot(2,2,3)
-plt.plot(np_array[:,0],np_array[:,4], 'o', c="orange", markersize=3)
-plt.plot(filtered_data[:,0],filtered_data[:,4], 'o', c="palegreen", markersize=3)
+plt.plot(df[:,0],df[:,4], 'o', c="orange", markersize=3)
+plt.plot(y_all,x_all[:,1], 'o', c="palegreen", markersize=3)
 plt.title(titles[4], fontsize= 10)
 plt.xlabel('Neighborhood', fontsize=8)
 plt.xticks(fontsize=8)
 plt.yticks(fontsize=8)
 
 plt.subplot(2,2,4)
-plt.plot(np_array[:,0],np_array[:,5], 'o', c="orange", markersize=3)
-plt.plot(filtered_data[:,0],filtered_data[:,5], 'o', c="palegreen", markersize=3)
+plt.plot(df[:,0],df[:,5], 'o', c="orange", markersize=3)
+plt.plot(y_all,x_all[:,2], 'o', c="palegreen", markersize=3)
 plt.title(titles[5], fontsize= 10)
 plt.xlabel('Neighborhood', fontsize=8)
 plt.xticks(fontsize=8)
 plt.yticks(fontsize=8)
-path = "plots/data_cleaning/10.png"
-plt.savefig(path)
 
-'''
-SPLITTING THE DATA:
-    - TRAINING VS. VALIDATION
-    - RELEVANT COLUMNS: [0] Neighborhood, [3] = GrossSqFt, [4] GrossIncomeSqFt, [5] MarketValueperSqFt
-'''
 
-# removing unneeded columns
-filtered_data = np.delete(filtered_data, (1,2), 1)
-print ("filtered_data after removing columns",filtered_data.shape,":")
-print (filtered_data)
-
-# reordeing the columns: putting Neighborhood at the end
-filtered_data = np.hstack((filtered_data, filtered_data[:,0].reshape(-1,1)))
-filtered_data = np.delete(filtered_data, (0), 1)
-print ("filtered_data after reordering",filtered_data.shape,":")
-print (filtered_data)
+'''------------------------------------
+NORMALIZTING THE DATA
+------------------------------------'''
 
 ###############################
-# saving the filtered data as a single csv file
+# Normalization method A: using 'whiten'
 ###############################
-np.savetxt("clean_datasets/filtered_data.csv", filtered_data, delimiter=';')
+# print ('before', x_all)
+# x_all = whiten(x_all)
+# print ('after', x_all)
 
 ###############################
-# generating training and test data sets
+# Normalization method B: using max values (0-1)
 ###############################
+for i in range(0,columns):
+    x_max = np.amax(x_all[:,i])
+    x_all[:,i] = x_all[:,i]/x_max
 
-rows,columns = filtered_data.shape
-
-# generating training batch
-test_rows = round(rows*0.2)
-training_rows = rows - test_rows
-
-x_training = np.empty([0,columns-1], dtype=float)
-y_training = np.empty([0,1], dtype=float)
-for i in range (0, training_rows):
-    x_value = filtered_data[i,0:3]
-    y_value = filtered_data[i,3]
-
-    x_training = np.vstack((x_training,x_value))
-    y_training = np.vstack((y_training,y_value))
+# y_max = np.amax(y_all)
+# y_all = y_all/y_max
 
 
-# generating validation batch
-x_test = np.empty([0,columns-1], dtype=float)
-y_test = np.empty([0,1], dtype=float)
-for i in range (training_rows, rows):
-    x_value = filtered_data[i,0:3]
-    y_value = filtered_data[i,3]
-
-    x_test = np.vstack((x_test,x_value))
-    y_test = np.vstack((y_test,y_value))
-
-
-print ('x_test:')
-# print (x_validation)
-print (x_test.shape)
-print ('y_test:')
-# print (y_validation)
-print (y_test.shape)
+'''------------------------------------
+GENERATING TRAINING SET AND TEST SET
+------------------------------------'''
+x_training, x_test, y_training, y_test = train_test_split(x_all, y_all, train_size=0.8, random_state=3)
 
 print ('x_training:')
-# print (x_training)
 print (x_training.shape)
 print ('y_training:')
-# print (y_training)
 print (y_training.shape)
 
+print ('x_test:')
+print (x_test.shape)
+print ('y_test:')
+print (y_test.shape)
 
-'''
+
+'''------------------------------------
 SAVING TRAINING AND TEST CSV FILES
-'''
+------------------------------------'''
 np.savetxt("clean_datasets/x_training.csv", x_training, delimiter=';') # saving x_training as csv
 np.savetxt("clean_datasets/x_test.csv", x_test, delimiter=';') # saving x_test as csv
 np.savetxt("clean_datasets/y_training.csv", y_training, delimiter=';') # saving x_training as csv
 np.savetxt("clean_datasets/y_test.csv", y_test, delimiter=';') # saving x_test as csv
 print ('#####', removed_rows, 'were removed from the data set')
-print ('##### filtered_data size after cleaning: ', filtered_data.shape)
 plt.show()
